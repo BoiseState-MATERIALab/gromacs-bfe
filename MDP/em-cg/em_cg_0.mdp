@@ -1,0 +1,80 @@
+; Author: Gabe Miles	Date: 9/9/22
+; Run control
+integrator		= cg		 ; The algorithm being used
+emtol			= 500.0	         ; Stops minimization at Fmax < 500 kj/mol/nm
+emstep			= 0.01		 ; Just step size		
+nsteps			= 50000		 ; Maximum number of steps
+nstcgsteep		= 1000		 ; Every 1000 steps, perfrom a steep descent
+
+; Parameteers describing a) how to find the nerighbors of each atom and b) how to calculate the interactions
+nstlist			= 1		 ; Frequency to update the neighbor list and long range forces
+cutoff-scheme   	= Verlet	 ; Buffered neighbor search (?), seems its like how far particles need to be to not interact with each other?
+ns_type 		= grid		 ; Method to determine neighbor list
+pbc			= xyz		 ; Periodic Boundary Conditions in all 3 dimensions (cuz we operate in 3 dimensions)
+rlist			= 1.2		 ; Cut-off distance for short-range neighbor list. It has a default of 1, so I don't know why it needs to be set to 1.1. I'm gonna leave it as 1.
+
+; Electrostatics
+coulombtype		= PME		 ; Model used for electrostaic interactions
+rcoulomb		= 1.2 		 ; Distance cut-off from Coulomb (electrostatic) interactions
+
+; van der Waals
+vdwtype			= cutoff 	 ; As I understand it, this is simply saving computational work. PME would be more accurate because it is more dynamic (?) - I'd have to read more.
+vdw-modifier		= Potential-switch ; This is simply saying that the vdw forces get turned off at the cut-off distance, rather than slowly turned off. This may depend on OPLS-AA forcefield
+rvdw-switch		= 1.0
+rvdw			= 1.2
+
+; Apply long range dispersion corrections for Energy and Pressure
+DispCorr		= EnerPres
+
+; Spacing for the PME/PPPM FFT grid (Need to do research)
+fourierspacing		= 0.12
+
+; EWALD/PME/PPPM parameters (Need to do research)
+pme_order		= 6
+ewald_rtol		= 1e-06
+epsilon_surface		= 0
+
+; Temperature and pressure coupling are off during EM
+tcoupl			= no
+pcoupl			= no
+
+; Free energy controls (just controlling how much electrostatic and van der Waals interactions we want in our simulation)
+free_energy		= yes
+init_lambda_state	= 0
+delta_lambda		= 0
+calc_lambda_neighbors   = 1		; only immediate neighboring windows
+couple-moltype		= LIG		; name of moleculetype to decouple (ligand)
+couple-lambda0		= vdw-q		; only vdw interactions
+couple-lambda1		= none		; turn off everything, in this case vdw
+couple-intramol		= no
+
+; I understand the lambda state stuff, but not a lot of the parameters for this
+; Vectors of lambda
+; Each combinatino is an index that is retrieved from init_lambda_state for each simulation
+; init_lambda_state         0    1    2    3    4    5    6    7    8    9    10   11   12   13   14   15   16   17   18   19   20   21   22   23   24   25   26   27   28   29   30   
+coul_lambdas             = 0.00 0.10 0.20 0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00 1.00 1.00 1.00 1.00 1.00 1.00 1.00 1.00 1.00 1.00 1.00 1.00 1.00 1.00 1.00 1.00 1.00 1.00 1.00 1.00
+vdw_lambdas              = 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.05 0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 0.50 0.55 0.60 0.65 0.70 0.75 0.80 0.85 0.90 0.95 1.00
+; We are not transforming any bonded or restrained interactions 
+bonded_lambdas           = 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 
+restraint_lambdas        = 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00
+; Masses are not changing (particle identities are the same at lambda = 0 and lambda = 1)
+mass_lambdas             = 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00
+; Not doing simulated temperting here
+temperature_lambdas      = 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 
+; Options for the decoupling
+sc-alpha                 = 0.5
+sc-coul                  = no       ; linear interpolation of Coulomb (none in this case)
+sc-power                 = 1
+sc-sigma                 = 0.3
+nstdhdl                  = 10
+; No velocities during EM 
+gen_vel                  = no 
+; options for bonds
+constraints              = h-bonds  ; we only have C-H bonds here
+; Type of constraint algorithm
+constraint-algorithm     = lincs
+; Do not constrain the starting configuration
+continuation             = no
+; Highest order in the expansion of the constraint coupling matrix
+lincs-order              = 12
+
